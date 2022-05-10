@@ -6,8 +6,18 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(solver/include)
 add_library(solver OBJECT solver/src/solver.cpp solver/include/solver.h)
 
-add_executable(CDCL_solver_test tests/doctest.h tests/solver_tests.cpp tests/test.cpp)
+enable_testing()
+
+include(cmake/CPM.cmake)
+CPMAddPackage(
+        GITHUB_REPOSITORY doctest/doctest
+        GIT_TAG 2.4.5
+)
+
+add_executable(CDCL_solver_test tests/solver_tests.cpp tests/test.cpp)
 target_link_libraries(CDCL_solver_test PUBLIC solver)
+target_link_libraries(CDCL_solver_test PRIVATE doctest)
+add_test(NAME CDCL_solver_test COMMAND CDCL_solver_test)
 
 add_executable(CDCL_solver src/main.cpp)
 target_link_libraries(CDCL_solver PUBLIC solver)
