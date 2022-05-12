@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.17)
 project(CDCL_solver)
 
 set(CMAKE_CXX_STANDARD 17)
 
 include_directories(solver/include)
-add_library(solver OBJECT solver/src/solver.cpp solver/include/solver.h)
+add_library(solver OBJECT solver/src/solver.cpp solver/include/solver.h solver/src/CNF.cpp solver/include/CNF.h solver/include/utils.h)
 
 enable_testing()
 
