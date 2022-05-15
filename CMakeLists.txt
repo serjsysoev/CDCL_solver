@@ -19,5 +19,5 @@ target_link_libraries(CDCL_solver_test PUBLIC solver)
 target_link_libraries(CDCL_solver_test PRIVATE doctest)
 add_test(NAME CDCL_solver_test COMMAND CDCL_solver_test)
 
-add_executable(CDCL_solver src/main.cpp)
+add_executable(CDCL_solver src/main.cpp src/dimacs_parser.cpp src/dimacs_parser.h)
 target_link_libraries(CDCL_solver PUBLIC solver)
