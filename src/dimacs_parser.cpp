@@ -106,5 +106,5 @@ CDCL::Solver read_cnf(const Header &header, std::ifstream &input_file) {
 
 CDCL::Solver DimacsParser::parse_dimacs_file(std::ifstream &input_file) {
     Header header = read_header(input_file);
-    read_cnf(header, input_file);
+    return read_cnf(header, input_file);
 }

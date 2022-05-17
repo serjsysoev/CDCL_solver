@@ -35,6 +35,25 @@ namespace CDCL
 	public:
 		Solver() = default;
 
+		Solver& operator=(Solver&& other) noexcept
+		{
+			if (this == &other)
+				return *this;
+
+			cnf = std::move(other.cnf);
+			variables = std::move(other.variables);
+			return *this;
+		}
+
+		Solver(const Solver &other) {
+			if (this == &other) {
+				return;
+			}
+
+			cnf = other.cnf;
+			variables = other.variables;
+		}
+
 		void add_clause(const std::vector<WeakLiteral> &clause);
 
 		[[nodiscard]] utils::Maybe<std::vector<VariableConfig>> solve();
@@ -69,12 +88,12 @@ namespace CDCL
 
 		UnitPropagationStatus unit_propagate(std::vector<VariableValueDecision> &current_variables_stack);
 		void apply_new_variables(std::vector<VariableValueDecision> &current_variables_stack,
-		                         const std::unordered_map<int, CNF::Value> &value_by_id);
+		                         const std::unordered_map<int, CNF::Value> &value_by_id);;
+
+		void updateClausesValue();
 
 		std::vector<CNF::Clause> cnf;
 		std::unordered_map<int, std::shared_ptr<CNF::Variable>> variables;
-
-		void updateClausesValue();
 	};
 }
 

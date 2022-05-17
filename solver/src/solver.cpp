@@ -98,7 +98,7 @@ namespace CDCL
 		// applying
 		for (const auto &[id, val] : value_by_id)
 		{
-			current_variables_stack.emplace_back(id, val == CNF::Value::True ? CNF::Value::True : CNF::Value::False, true);
+			current_variables_stack.emplace_back(id, val == CNF::Value::True, true);
 			variables[id]->value = val;
 		}
 
