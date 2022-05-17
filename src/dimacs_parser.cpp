@@ -10,18 +10,6 @@ struct Header {
     int number_of_clauses;
 };
 
-bool string_starts_with(const std::string &str, const std::string &start) {
-    auto str_it = str.begin();
-    auto start_it = start.begin();
-
-    while (str_it != str.end() && start_it != start.end()) {
-        if (*str_it != *start_it) return false;
-        ++str_it, ++start_it;
-    }
-
-    return start_it == start.end();
-}
-
 void handle_header_error() {
     throw std::runtime_error("Invalid DIMACS\n"
                              "DIMACS file should start with the problem line of form\n"
@@ -29,7 +17,7 @@ void handle_header_error() {
 }
 
 bool is_comment_or_empty(const std::string &line) {
-    return line.empty() || string_starts_with(line, "c ");
+    return line.empty() || (line[0] == 'c' && (line.length() == 1 || line[1] == ' '));
 }
 
 void check_variable_validity(int number_of_variables, int absolute_variable) {
@@ -55,7 +43,8 @@ Header read_header(std::ifstream &input_file) {
     Header header{};
 
     process_lines(input_file, [&header](std::istringstream &iss) {
-        if (iss.get() == 'p' && iss.get() == ' ' && iss.good()) {
+        std::string str;
+        if (iss >> str && str == "p" && iss >> str && str == "cnf" && iss.good()) {
             iss >> header.number_of_variables >> header.number_of_clauses;
             if (iss.fail()) {
                 handle_header_error();
@@ -81,6 +70,7 @@ CDCL::Solver read_cnf(const Header &header, std::ifstream &input_file) {
                 solver.add_clause(clause);
                 clause.clear();
                 ++number_of_clauses;
+                if (number_of_clauses == header.number_of_clauses) return true;
             } else {
                 int absolute_variable = abs(variable);
                 check_variable_validity(header.number_of_variables, absolute_variable);
