@@ -21,6 +21,15 @@ namespace CDCL
 		{}
 	};
 
+	struct VariableConfig
+	{
+		int id;
+		bool value;
+
+		VariableConfig(int id, bool value) : id(id), value(value)
+		{}
+	};
+
 	class Solver
 	{
 	public:
@@ -28,11 +37,44 @@ namespace CDCL
 
 		void add_clause(const std::vector<WeakLiteral> &clause);
 
+		[[nodiscard]] utils::Maybe<std::vector<VariableConfig>> solve();
+
 		void print_clauses() const;
 
 	private:
+		struct VariableValueDecision
+		{
+			int var_id;
+			bool cur_value;
+			bool isAutomaticallyDetermined;
+
+			VariableValueDecision(
+					int varId,
+					bool curValue,
+					bool isAutomaticallyDetermined
+			) : var_id(varId), cur_value(curValue),
+			    isAutomaticallyDetermined(isAutomaticallyDetermined)
+			{}
+		};
+
+		enum UnitPropagationStatus {
+			Bad,
+			Good,
+			NothingChanged
+		};
+
+		int get_next_unassigned_variable() const;
+
+		bool change_last_decision(std::vector<VariableValueDecision> &current_variables_stack);
+
+		UnitPropagationStatus unit_propagate(std::vector<VariableValueDecision> &current_variables_stack);
+		void apply_new_variables(std::vector<VariableValueDecision> &current_variables_stack,
+		                         const std::unordered_map<int, CNF::Value> &value_by_id);
+
 		std::vector<CNF::Clause> cnf;
 		std::unordered_map<int, std::shared_ptr<CNF::Variable>> variables;
+
+		void updateClausesValue();
 	};
 }
 
