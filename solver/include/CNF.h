@@ -27,7 +27,7 @@ namespace CNF
 		// int count_in_literals_with_negate;
 		// int count_in_literals_without_negate;
 
-		Variable(int id, Value value = Value::Undefined) : id(id), value(value)
+		explicit Variable(int id = -1, Value value = Value::Undefined) : id(id), value(value)
 		{}
 	};
 
@@ -42,14 +42,19 @@ namespace CNF
 		Value get_value() const;
 	};
 
-	struct Clause
+	class Clause
 	{
-		explicit Clause(std::vector<Literal> literals) : literals(std::move(literals))
+	public:
+		explicit Clause(std::vector<Literal> literals) : literals(std::move(literals)), isTrue(false)
 		{}
 
 		std::vector<Literal> literals;
 
-		[[nodiscard]] utils::Maybe<int> get_maybe_updatable_variable_id() const;
+		[[nodiscard]] utils::Maybe<CNF::Variable> get_maybe_updatable_variable_id() const;
+
+		void update_clause_value();
+	private:
+		bool isTrue;
 	};
 }
 
