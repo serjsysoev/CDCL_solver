@@ -84,7 +84,7 @@ CDCL::Solver read_cnf(const Header &header, std::ifstream &input_file) {
             } else {
                 int absolute_variable = abs(variable);
                 check_variable_validity(header.number_of_variables, absolute_variable);
-                clause.emplace_back(absolute_variable, absolute_variable == variable);
+                clause.emplace_back(absolute_variable, absolute_variable != variable);
             }
         }
         if (iss.fail()) {
