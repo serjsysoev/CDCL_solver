@@ -4,6 +4,7 @@ import queue
 import tarfile
 import time
 import urllib.parse
+from pathlib import Path
 import requests
 import tempfile
 import os
@@ -40,7 +41,7 @@ def download_archive(url: str, destination: str) -> str:
     while attempts < DOWNLOAD_ATTEMPTS_MAX:
         try:
             with requests.get(url, stream=True) as response:
-                filename = get_filename(response)
+                filename = get_filename(response).split('.')[0]
                 with tarfile.open(fileobj=response.raw, mode="r:gz") as tar:
                     tar_dir = os.path.join(destination, filename)
                     os.mkdir(tar_dir)
@@ -56,21 +57,20 @@ def download_archive(url: str, destination: str) -> str:
             time.sleep(0.5 * attempts)
 
 
-# https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
-def get_files_in_dir(dir_path: str) -> List[str]:
-    return next(os.walk(dir_path), (None, None, []))[2]
+# https://stackoverflow.com/questions/18394147/how-to-do-a-recursive-sub-folder-search-and-return-files-in-a-list
+def get_files_in_dir_recursively(dir_path: str) -> List[Path]:
+    return list(Path(dir_path).rglob("*.[cC][nN][fF]"))
 
 
-def run_sat_solver(test_dir_path: str, test_filename: str, sat_solver_path: str, expected_result: bool):
-    cnf_file = os.path.join(test_dir_path, test_filename)
-    process = subprocess.run([sat_solver_path, cnf_file], capture_output=True)
+def run_sat_solver(test_path: Path, sat_solver_path: str, expected_result: bool):
+    process = subprocess.run([sat_solver_path, str(test_path)], capture_output=True)
     stdout = process.stdout
     stdout = stdout.decode("utf-8")
     lines = stdout.splitlines()
     if len(lines) == 0 or lines[0] not in ["SATISFIABLE", "UNSATISFIABLE"]:
         stderr = process.stderr.decode("utf-8")
         output = textwrap.dedent(f"""
-        Invalid output format on {cnf_file}
+        Invalid output format on {test_path.name}
         stdout:
         {stdout}
         stderr:
@@ -82,8 +82,8 @@ def run_sat_solver(test_dir_path: str, test_filename: str, sat_solver_path: str,
         if result != expected_result:
             expected_text = "SATISFIABLE" if expected_result else "UNSATISFIABLE"
             result_text = "SATISFIABLE" if result else "UNSATISFIABLE"
-            archive_name = os.path.basename(test_dir_path)
-            test_progressbar.write(f"Wrong result for file {test_filename} from {archive_name}:\n"
+            archive_name = os.path.basename(test_path.parent)
+            test_progressbar.write(f"Wrong result for file {test_path.name} from {archive_name}:\n"
                                    f"Expected {expected_text}, got {result_text}", file=sys.stderr)
     test_progressbar.update(1)
 
@@ -100,12 +100,12 @@ def consume_task_queue():
 
 def download_tests_and_queue(archive_uri: str, tempdir: str, sat_solver_path: str, expected_result: bool):
     path = download_archive(urllib.parse.urljoin(config.base_url, archive_uri), tempdir)
-    filenames = get_files_in_dir(path)
-    test_progressbar.total += len(filenames)
+    paths = get_files_in_dir_recursively(path)
+    test_progressbar.total += len(paths)
     test_progressbar.refresh()
     task_queue.put(lambda: test_progressbar.write(f"Processing archive {archive_uri}..."))
-    for filename in filenames:
-        task_queue.put(lambda: run_sat_solver(path, filename, sat_solver_path, expected_result))
+    for test_path in paths:
+        task_queue.put(lambda: run_sat_solver(test_path, sat_solver_path, expected_result))
 
 
 def run_tests(sat_solver_path: str):
