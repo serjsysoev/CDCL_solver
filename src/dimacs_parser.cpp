@@ -77,8 +77,12 @@ CDCL::Solver read_cnf(const Header &header, std::ifstream &input_file) {
                 clause.emplace_back(absolute_variable, absolute_variable != variable);
             }
         }
-        if (iss.fail()) {
-            throw std::runtime_error("Error while parsing DIMACS file");
+        if (iss.bad()) {
+            std::string rest;
+            std::getline(iss, rest);
+            if (rest.find_first_not_of(' ') != std::string::npos) {
+                throw std::runtime_error("Error while parsing DIMACS file");
+            }
         }
         return false;
     });
