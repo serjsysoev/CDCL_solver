@@ -1,22 +1,40 @@
 #include "CNF.h"
 
-utils::Maybe<int> CNF::Clause::get_maybe_updatable_variable_id() const
+utils::Maybe<CNF::Variable> CNF::Clause::get_maybe_updatable_variable_id() const
 {
-	int var_id = -1;
+	if (isTrue) {
+		return utils::Maybe<CNF::Variable>(Variable(), false);
+	}
+	CNF::Variable var_with_val(-1, Value::Undefined);
 	for (const auto &literal : literals)
 	{
 		if (literal.get_value() == Value::Undefined)
 		{
-			if (var_id < 0)
+			if (var_with_val.value == Value::Undefined)
 			{
-				var_id = literal.var->id;
+				var_with_val.id = literal.var->id;
+				if (literal.has_negate) {
+					var_with_val.value = Value::False;
+				} else {
+					var_with_val.value = Value::True;
+				}
 				continue;
 			}
-			return utils::Maybe<int>(-1, false);
+			return utils::Maybe<Variable>(Variable(), false);
 		}
 	}
 
-	return utils::Maybe<int>(var_id, var_id >= 0);
+	return utils::Maybe<CNF::Variable>(var_with_val, var_with_val.value != Value::Undefined);
+}
+
+void CNF::Clause::update_clause_value()
+{
+	isTrue = false;
+	for (const auto &literal : literals) {
+		if (literal.get_value() == Value::True) {
+			isTrue = true;
+		}
+	}
 }
 
 CNF::Value CNF::Literal::get_value() const
