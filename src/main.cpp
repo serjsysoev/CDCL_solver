@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -21,7 +22,21 @@ int main(int argc, char *argv[]) {
         std::cerr << err.what();
         exit(1);
     }
-    solver.print_clauses();
+    auto solution = solver.solve();
+    if (solution.has_value) {
+        std::cout << "SATISFIABLE" << "\n";
+        auto &variablesConfig = solution.value;
+        std::sort(variablesConfig.begin(), variablesConfig.end(),
+                  [](const CDCL::VariableConfig &l, const CDCL::VariableConfig &r) {
+                      return l.value < r.value;
+                  });
+        for (auto &variableConfig : variablesConfig) {
+            std::cout << variableConfig.id * (variableConfig.value ? 1 : -1) << " ";
+        }
+        std::cout << std::endl;
+    } else {
+        std::cout << "UNSATISFIABLE" << std::endl;
+    }
 
     return 0;
 }
