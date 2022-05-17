@@ -11,6 +11,7 @@ import itertools
 import config
 from typing import List
 
+THREAD_POOL_SIZE = 50
 
 def download_archive(url: str) -> str:
     """
@@ -36,15 +37,26 @@ def get_files_in_dir(dir_path: str) -> List[str]:
 
 
 def run_sat_solver(sat_solver_path: str, cnf_file: str) -> bool:
-    stdout = subprocess.run([sat_solver_path, cnf_file], capture_output=True).stdout
-    return True  # fixme
+    process = subprocess.run([sat_solver_path, cnf_file], capture_output=True)
+    stdout = process.stdout
+    stdout = stdout.decode("utf-8")
+    lines = stdout.splitlines()
+    if len(lines) == 0 or lines[0] not in ["SATISFIABLE", "UNSATISFIABLE"]:
+        print(f"Invalid output format on {cnf_file}, stdout:", file=sys.stderr)
+        print(stdout, file=sys.stderr)
+        print("stderr:", file=sys.stderr)
+        print(process.stderr.decode("utf-8"), file=sys.stderr)
+    else:
+        return lines[0] == "SATISFIABLE"
 
 
 def run_tests_for_archive(archive_uri: str, pool: multiprocessing.Pool, sat_solver_path: str, expected_result: True):
     # TODO: start downloading next archive while executing sat solvers for this one.
+    print(f"Downloading archive {archive_uri}")
     tempdir = download_archive(urllib.parse.urljoin(config.base_url, archive_uri))
     filenames = get_files_in_dir(tempdir)
     file_paths = map(lambda x: os.path.join(tempdir, x), filenames)
+    print("Running tests...")
     results = pool.starmap(run_sat_solver, zip(itertools.repeat(sat_solver_path), file_paths))
     shutil.rmtree(tempdir)
 
@@ -57,7 +69,9 @@ def run_tests_for_archive(archive_uri: str, pool: multiprocessing.Pool, sat_solv
 
 
 def run_tests(sat_solver_path: str):
-    pool = multiprocessing.Pool(8)
+    print(f"Creating thread pool of size {THREAD_POOL_SIZE}")
+    pool = multiprocessing.Pool(THREAD_POOL_SIZE)
+    print("Done")
     for archive in config.satisfiable_cnf_archives:
         run_tests_for_archive(archive, pool, sat_solver_path, True)
 
