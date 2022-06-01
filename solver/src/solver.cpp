@@ -152,9 +152,6 @@ namespace CDCL
 		for (auto &clause : cnf)
 		{
 			if (clause.get_value() == CNF::Value::False) {
-				for (const auto &val : current_variables_stack) {
-					std::cout << val.var_id << " : " << val.cur_value << " : " << val.is_automatically_determined << std::endl;
-				}
 				return false;
 			}
 		}
