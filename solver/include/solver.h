@@ -88,7 +88,7 @@ namespace CDCL
 
 		UnitPropagationStatus unit_propagate(std::vector<VariableValueDecision> &current_variables_stack);
 		void apply_new_variables(std::vector<VariableValueDecision> &current_variables_stack,
-		                         const std::unordered_map<int, CNF::Value> &value_by_id);;
+		                         const std::unordered_map<int, CNF::Value> &value_by_id);
 
 		void updateClausesValue();
 

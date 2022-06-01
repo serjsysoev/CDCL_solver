@@ -34,13 +34,13 @@ namespace CDCL
 		std::vector<VariableValueDecision> current_variables_stack;
 		while (current_variables_stack.size() != variables.size())
 		{
-			auto PropagatingStatus = unit_propagate(current_variables_stack);
-			while (PropagatingStatus == Good) {
-				PropagatingStatus = unit_propagate(current_variables_stack);
-			}
-			if (PropagatingStatus == Bad) {
+			UnitPropagationStatus propagating_status;
+			do {
+                propagating_status = unit_propagate(current_variables_stack);
+			} while (propagating_status == Good);
+			if (propagating_status == Bad) {
 				if (!change_last_decision(current_variables_stack)) {
-					return {{}, false};
+					return {};
 				}
 				continue;
 			}
@@ -50,7 +50,6 @@ namespace CDCL
 			current_variables_stack.emplace_back(next_variable_id, false, false);
 			variables[next_variable_id]->value = CNF::Value::False;
 			updateClausesValue();
-
 		}
 
 
@@ -60,7 +59,7 @@ namespace CDCL
 			result.emplace_back(var_with_decision.var_id, var_with_decision.cur_value);
 		}
 
-		return {result, true};
+		return utils::Maybe(result);
 	}
 
 	Solver::UnitPropagationStatus Solver::unit_propagate(std::vector<VariableValueDecision> &current_variables_stack)
@@ -118,18 +117,19 @@ namespace CDCL
 	{
 		// This is like we are looking for the least ancestor which has more "righter" path
 		while (!current_variables_stack.empty()) {
-			if (current_variables_stack.back().isAutomaticallyDetermined) {
-				variables[current_variables_stack.back().var_id]->value = CNF::Value::Undefined;
+            auto &stack_back = current_variables_stack.back();
+            if (stack_back.isAutomaticallyDetermined) {
+				variables[stack_back.var_id]->value = CNF::Value::Undefined;
 				current_variables_stack.pop_back();
 				continue;
 			}
-			if (current_variables_stack.back().cur_value) {
-				variables[current_variables_stack.back().var_id]->value = CNF::Value::Undefined;
+			if (stack_back.cur_value) {
+				variables[stack_back.var_id]->value = CNF::Value::Undefined;
 				current_variables_stack.pop_back();
 				continue;
 			}
-			variables[current_variables_stack.back().var_id]->value = CNF::Value::True;
-			current_variables_stack.back().cur_value = true;
+			variables[stack_back.var_id]->value = CNF::Value::True;
+            stack_back.cur_value = true;
 			updateClausesValue();
 			return true;
 		}

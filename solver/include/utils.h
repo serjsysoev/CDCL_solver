@@ -10,7 +10,10 @@ namespace utils
 		T value;
 		bool has_value;
 
-		Maybe(T value = -1, bool hasValue = false) : value(value), has_value(hasValue)
+		explicit Maybe(T value) : value(value), has_value(true)
+		{}
+
+		Maybe() : has_value(false)
 		{}
 	};
 }
