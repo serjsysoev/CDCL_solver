@@ -48,6 +48,18 @@ namespace CNF
 		explicit Clause(std::vector<Literal> literals) : literals(std::move(literals)), isTrue(false)
 		{}
 
+		[[nodiscard]] CNF::Value get_value() const {
+			for (const auto &lit : literals) {
+				if (lit.get_value() == Value::Undefined) {
+					return Value::Undefined;
+				}
+				if (lit.get_value() == Value::True) {
+					return Value::True;
+				}
+			}
+			return Value::False;
+		}
+
 		std::vector<Literal> literals;
 
 		[[nodiscard]] utils::Maybe<CNF::Variable> get_maybe_updatable_variable_id() const;

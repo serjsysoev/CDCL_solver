@@ -16,7 +16,7 @@ namespace CDCL
 			{
 				variables[literal.id] = std::make_shared<CNF::Variable>(CNF::Variable(literal.id));
 			}
-			result_clause.emplace_back(variables[literal.id], literal.hasNegate);
+			result_clause.emplace_back(variables[literal.id], literal.has_negate);
 		}
 		cnf.emplace_back(result_clause);
 	}
@@ -38,7 +38,7 @@ namespace CDCL
 			while (PropagatingStatus == Good) {
 				PropagatingStatus = unit_propagate(current_variables_stack);
 			}
-			if (PropagatingStatus == Bad) {
+			if (PropagatingStatus == Bad || !checkAllClauses(current_variables_stack)) {
 				if (!change_last_decision(current_variables_stack)) {
 					return {{}, false};
 				}
@@ -49,7 +49,7 @@ namespace CDCL
 			int next_variable_id = get_next_unassigned_variable();
 			current_variables_stack.emplace_back(next_variable_id, false, false);
 			variables[next_variable_id]->value = CNF::Value::False;
-			updateClausesValue();
+			update_clauses_value();
 
 		}
 
@@ -103,10 +103,10 @@ namespace CDCL
 		}
 
 		// updating clause's result
-		updateClausesValue();
+		update_clauses_value();
 	}
 
-	void Solver::updateClausesValue()
+	void Solver::update_clauses_value()
 	{
 		for (auto &clause : cnf)
 		{
@@ -118,7 +118,7 @@ namespace CDCL
 	{
 		// This is like we are looking for the least ancestor which has more "righter" path
 		while (!current_variables_stack.empty()) {
-			if (current_variables_stack.back().isAutomaticallyDetermined) {
+			if (current_variables_stack.back().is_automatically_determined) {
 				variables[current_variables_stack.back().var_id]->value = CNF::Value::Undefined;
 				current_variables_stack.pop_back();
 				continue;
@@ -130,7 +130,7 @@ namespace CDCL
 			}
 			variables[current_variables_stack.back().var_id]->value = CNF::Value::True;
 			current_variables_stack.back().cur_value = true;
-			updateClausesValue();
+			update_clauses_value();
 			return true;
 		}
 
@@ -146,5 +146,20 @@ namespace CDCL
 			}
 		}
 		return -1;
+	}
+
+	bool Solver::checkAllClauses(const std::vector<VariableValueDecision> &current_variables_stack) const {
+		for (auto &clause : cnf)
+		{
+			if (clause.get_value() == CNF::Value::False) {
+				for (const auto &val : current_variables_stack) {
+					std::cout << val.var_id << " : " << val.cur_value << " : " << val.is_automatically_determined << std::endl;
+				}
+				return false;
+			}
+		}
+
+		return true;
+
 	}
 }

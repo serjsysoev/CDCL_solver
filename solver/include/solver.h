@@ -8,35 +8,28 @@
 #include "CNF.h"
 
 
-namespace CDCL
-{
+namespace CDCL {
 	int test();
 
-	struct WeakLiteral
-	{
+	struct WeakLiteral {
 		int id;
-		bool hasNegate;
+		bool has_negate;
 
-		WeakLiteral(int id, bool hasNegate) : id(id), hasNegate(hasNegate)
-		{}
+		WeakLiteral(int id, bool has_negate) : id(id), has_negate(has_negate) {}
 	};
 
-	struct VariableConfig
-	{
+	struct VariableConfig {
 		int id;
 		bool value;
 
-		VariableConfig(int id, bool value) : id(id), value(value)
-		{}
+		VariableConfig(int id, bool value) : id(id), value(value) {}
 	};
 
-	class Solver
-	{
+	class Solver {
 	public:
 		Solver() = default;
 
-		Solver& operator=(Solver&& other) noexcept
-		{
+		Solver &operator=(Solver &&other) noexcept {
 			if (this == &other)
 				return *this;
 
@@ -61,19 +54,18 @@ namespace CDCL
 		void print_clauses() const;
 
 	private:
-		struct VariableValueDecision
-		{
+
+		struct VariableValueDecision {
 			int var_id;
 			bool cur_value;
-			bool isAutomaticallyDetermined;
+			bool is_automatically_determined;
 
 			VariableValueDecision(
-					int varId,
-					bool curValue,
-					bool isAutomaticallyDetermined
-			) : var_id(varId), cur_value(curValue),
-			    isAutomaticallyDetermined(isAutomaticallyDetermined)
-			{}
+					int var_id,
+					bool cur_value,
+					bool is_automatically_determined
+			) : var_id(var_id), cur_value(cur_value),
+			    is_automatically_determined(is_automatically_determined) {}
 		};
 
 		enum UnitPropagationStatus {
@@ -87,13 +79,16 @@ namespace CDCL
 		bool change_last_decision(std::vector<VariableValueDecision> &current_variables_stack);
 
 		UnitPropagationStatus unit_propagate(std::vector<VariableValueDecision> &current_variables_stack);
-		void apply_new_variables(std::vector<VariableValueDecision> &current_variables_stack,
-		                         const std::unordered_map<int, CNF::Value> &value_by_id);;
 
-		void updateClausesValue();
+		void apply_new_variables(std::vector<VariableValueDecision> &current_variables_stack,
+		                         const std::unordered_map<int, CNF::Value> &value_by_id);
+
+		void update_clauses_value();
 
 		std::vector<CNF::Clause> cnf;
 		std::unordered_map<int, std::shared_ptr<CNF::Variable>> variables;
+
+		bool checkAllClauses(const std::vector<VariableValueDecision> &current_variables_stack) const;
 	};
 }
 

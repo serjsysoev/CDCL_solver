@@ -1,17 +1,13 @@
 #include "CNF.h"
 
-utils::Maybe<CNF::Variable> CNF::Clause::get_maybe_updatable_variable_id() const
-{
+utils::Maybe<CNF::Variable> CNF::Clause::get_maybe_updatable_variable_id() const {
 	if (isTrue) {
 		return utils::Maybe<CNF::Variable>(Variable(), false);
 	}
 	CNF::Variable var_with_val(-1, Value::Undefined);
-	for (const auto &literal : literals)
-	{
-		if (literal.get_value() == Value::Undefined)
-		{
-			if (var_with_val.value == Value::Undefined)
-			{
+	for (const auto &literal : literals) {
+		if (literal.get_value() == Value::Undefined) {
+			if (var_with_val.value == Value::Undefined) {
 				var_with_val.id = literal.var->id;
 				if (literal.has_negate) {
 					var_with_val.value = Value::False;
@@ -27,8 +23,7 @@ utils::Maybe<CNF::Variable> CNF::Clause::get_maybe_updatable_variable_id() const
 	return utils::Maybe<CNF::Variable>(var_with_val, var_with_val.value != Value::Undefined);
 }
 
-void CNF::Clause::update_clause_value()
-{
+void CNF::Clause::update_clause_value() {
 	isTrue = false;
 	for (const auto &literal : literals) {
 		if (literal.get_value() == Value::True) {
@@ -37,24 +32,19 @@ void CNF::Clause::update_clause_value()
 	}
 }
 
-CNF::Value CNF::Literal::get_value() const
-{
-	if (var->value == Value::Undefined)
-	{
+CNF::Value CNF::Literal::get_value() const {
+	if (var->value == Value::Undefined) {
 		return Value::Undefined;
 	}
-	if (has_negate)
-	{
+	if (has_negate) {
 		return var->value == Value::True ? Value::False : Value::True;
 	}
 	return var->value;
 }
 
-std::ostream &operator<<(std::ostream &out, const CNF::Variable &var)
-{
+std::ostream &operator<<(std::ostream &out, const CNF::Variable &var) {
 	out << var.id << " = ";
-	switch (var.value)
-	{
+	switch (var.value) {
 
 		case CNF::Value::False:
 			out << 0;
@@ -69,8 +59,7 @@ std::ostream &operator<<(std::ostream &out, const CNF::Variable &var)
 	return out;
 }
 
-std::ostream &operator<<(std::ostream &out, const CNF::Literal &literal)
-{
+std::ostream &operator<<(std::ostream &out, const CNF::Literal &literal) {
 	if (literal.has_negate) {
 		out << '-';
 	}
@@ -78,8 +67,7 @@ std::ostream &operator<<(std::ostream &out, const CNF::Literal &literal)
 	return out;
 }
 
-std::ostream &operator<<(std::ostream &out, const CNF::Clause &clause)
-{
+std::ostream &operator<<(std::ostream &out, const CNF::Clause &clause) {
 	for (const auto &literal : clause.literals) {
 		out << literal << ' ';
 	}

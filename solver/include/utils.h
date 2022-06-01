@@ -2,16 +2,13 @@
 #define CDCL_SOLVER_UTILS_H
 
 
-namespace utils
-{
+namespace utils {
 	template<typename T>
-	struct Maybe
-	{
+	struct Maybe {
 		T value;
 		bool has_value;
 
-		Maybe(T value = -1, bool hasValue = false) : value(value), has_value(hasValue)
-		{}
+		Maybe(T value, bool hasValue) : value(value), has_value(hasValue) {}
 	};
 }
 

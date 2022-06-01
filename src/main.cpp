@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
         auto &variablesConfig = solution.value;
         std::sort(variablesConfig.begin(), variablesConfig.end(),
                   [](const CDCL::VariableConfig &l, const CDCL::VariableConfig &r) {
-                      return l.value < r.value;
+                      return l.id < r.id;
                   });
         for (auto &variableConfig : variablesConfig) {
             std::cout << variableConfig.id * (variableConfig.value ? 1 : -1) << " ";
