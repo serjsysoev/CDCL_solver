@@ -91,7 +91,7 @@ unsatisfiable_cnf_archives = [
     # "Benchmarks/SAT/RND3SAT/uuf200-860.tar.gz",
     # "Benchmarks/SAT/RND3SAT/uuf225-960.tar.gz",
     # "Benchmarks/SAT/RND3SAT/uuf250-1065.tar.gz",
-    "Benchmarks/SAT/DIMACS/DUBOIS/dubois.tar.gz",
+    # "Benchmarks/SAT/DIMACS/DUBOIS/dubois.tar.gz",
     "Benchmarks/SAT/DIMACS/BF/bf.tar.gz",
     "Benchmarks/SAT/DIMACS/PHOLE/pigeon-hole.tar.gz",
     "Benchmarks/SAT/DIMACS/PRET/pret.tar.gz",

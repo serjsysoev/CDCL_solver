@@ -103,9 +103,9 @@ def download_tests_and_queue(archive_uri: str, tempdir: str, sat_solver_path: st
     paths = get_files_in_dir_recursively(path)
     test_progressbar.total += len(paths)
     test_progressbar.refresh()
-    task_queue.put(lambda: test_progressbar.write(f"Processing archive {archive_uri}..."))
+    task_queue.put(lambda uri=archive_uri: test_progressbar.write(f"Processing archive {uri}..."))
     for test_path in paths:
-        task_queue.put(lambda: run_sat_solver(test_path, sat_solver_path, expected_result))
+        task_queue.put(lambda path_copy=test_path: run_sat_solver(path_copy, sat_solver_path, expected_result))
 
 
 def run_tests(sat_solver_path: str):
@@ -136,6 +136,7 @@ def get_default_bar_format() -> str:
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: ./test_runner.py path_to_sat_solver")
+        exit(1)
 
     archives_count = len(config.satisfiable_cnf_archives + config.unsatisfiable_cnf_archives)
     download_progressbar_desc = "Test archives downloaded"
