@@ -3,7 +3,7 @@
 utils::Maybe<CNF::Variable> CNF::Clause::get_maybe_updatable_variable_id() const
 {
 	if (isTrue) {
-		return utils::Maybe<CNF::Variable>(Variable(), false);
+		return {};
 	}
 	CNF::Variable var_with_val(-1, Value::Undefined);
 	for (const auto &literal : literals)
@@ -13,18 +13,14 @@ utils::Maybe<CNF::Variable> CNF::Clause::get_maybe_updatable_variable_id() const
 			if (var_with_val.value == Value::Undefined)
 			{
 				var_with_val.id = literal.var->id;
-				if (literal.has_negate) {
-					var_with_val.value = Value::False;
-				} else {
-					var_with_val.value = Value::True;
-				}
+                var_with_val.value = literal.has_negate ? Value::False : Value::True;
 				continue;
 			}
-			return utils::Maybe<Variable>(Variable(), false);
+			return {};
 		}
 	}
 
-	return utils::Maybe<CNF::Variable>(var_with_val, var_with_val.value != Value::Undefined);
+    return var_with_val.value != Value::Undefined ? utils::Maybe(var_with_val) : utils::Maybe<CNF::Variable>();
 }
 
 void CNF::Clause::update_clause_value()
@@ -33,21 +29,23 @@ void CNF::Clause::update_clause_value()
 	for (const auto &literal : literals) {
 		if (literal.get_value() == Value::True) {
 			isTrue = true;
+            break;
 		}
 	}
 }
 
 CNF::Value CNF::Literal::get_value() const
 {
-	if (var->value == Value::Undefined)
+    auto value = var->value;
+	if (value == Value::Undefined)
 	{
 		return Value::Undefined;
 	}
 	if (has_negate)
 	{
-		return var->value == Value::True ? Value::False : Value::True;
+		return value == Value::True ? Value::False : Value::True;
 	}
-	return var->value;
+	return value;
 }
 
 std::ostream &operator<<(std::ostream &out, const CNF::Variable &var)
@@ -55,7 +53,6 @@ std::ostream &operator<<(std::ostream &out, const CNF::Variable &var)
 	out << var.id << " = ";
 	switch (var.value)
 	{
-
 		case CNF::Value::False:
 			out << 0;
 			break;
