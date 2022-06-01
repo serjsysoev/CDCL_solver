@@ -122,6 +122,8 @@ def run_tests(sat_solver_path: str):
             download_progressbar.update(1)
             download_progressbar.write(f"Downloaded {archive}")
 
+        task_queue.join()
+
     # poison pills
     for i in range(THREAD_POOL_SIZE):
         task_queue.put(lambda: sys.exit(0))
