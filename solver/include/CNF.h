@@ -39,34 +39,24 @@ namespace CNF
 		Literal(std::shared_ptr<Variable> var, bool has_negate) : var(std::move(var)), has_negate(has_negate)
 		{}
 
-		Value get_value() const;
+		[[nodiscard]] Value get_value() const;
 	};
 
 	class Clause
 	{
 	public:
-		explicit Clause(std::vector<Literal> literals) : literals(std::move(literals)), isTrue(false)
-		{}
-
-		[[nodiscard]] CNF::Value get_value() const {
-			for (const auto &lit : literals) {
-				if (lit.get_value() == Value::Undefined) {
-					return Value::Undefined;
-				}
-				if (lit.get_value() == Value::True) {
-					return Value::True;
-				}
-			}
-			return Value::False;
-		}
+		explicit Clause(std::vector<Literal> literals) : literals(std::move(literals)) {}
 
 		std::vector<Literal> literals;
 
-		[[nodiscard]] utils::Maybe<CNF::Variable> get_maybe_updatable_variable_id() const;
+		bool needs_attention();
 
-		void update_clause_value();
+		std::array<Literal, 2> get_watched_literals();
 	private:
-		bool isTrue;
+		int watched_literals[2] = {0, 1};
+
+		utils::Maybe<int> find_first_non_false_literal(int excluded_index);
+
 	};
 }
 
