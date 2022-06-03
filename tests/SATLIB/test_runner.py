@@ -180,7 +180,8 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    archives_count = len(config.satisfiable_cnf_archives + config.unsatisfiable_cnf_archives)
+    archives_count = len(config_ci.satisfiable_cnf_archives if args.c else config.satisfiable_cnf_archives + 
+                               config_ci.unsatisfiable_cnf_archives if args.c else config.unsatisfiable_cnf_archives)
     download_progressbar_desc = "Test archives downloaded"
     test_progressbar_desc = "Tests processed"
     diff = len(download_progressbar_desc) - len(test_progressbar_desc)
