@@ -69,6 +69,9 @@ namespace CDCL {
         void set_same_sign_variables(std::vector<VariableValueDecision> &current_variables_stack);
 
 		int get_next_unassigned_variable() const;
+
+		bool handle_clause_needs_attention(CNF::Literal &literal,
+										   std::vector<VariableValueDecision> &current_variables_stack);
 	};
 }
 

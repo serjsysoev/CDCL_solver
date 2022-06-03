@@ -35,30 +35,10 @@ namespace CDCL {
 				i++;
 				if (clause.needs_attention()) {
 					auto &literals = clause.literals;
-					if (literals.size() == 1) {
-						auto &literal = literals.front();
-						if (literal.get_value() == CNF::Value::False) {
-							if (!change_last_decision(current_variables_stack)) {
-								return {};
-							}
-						} else {
-							assert(literal.get_value() == CNF::Value::Undefined);
-							int id = literal.var->id;
-							current_variables_stack.emplace_back(id, true);
-							variables[id]->value = literal.has_negate ? CNF::Value::False : CNF::Value::True;
-						}
-					} else {
-						auto first_literal = clause.get_watched_literals().front();
-						if (first_literal.get_value() == CNF::Value::False) {
-							if (!change_last_decision(current_variables_stack)) {
-								return {};
-							}
-						} else {
-							assert(first_literal.get_value() == CNF::Value::Undefined);
-							int id = first_literal.var->id;
-							current_variables_stack.emplace_back(id, true);
-							variables[id]->value = first_literal.has_negate ? CNF::Value::False : CNF::Value::True;
-						}
+
+					auto literal = literals.size() == 1 ? literals.front() : clause.get_watched_literals().front();
+					if (handle_clause_needs_attention(literal, current_variables_stack)) {
+						return {};
 					}
 					restart = true;
 					break;
@@ -84,6 +64,20 @@ namespace CDCL {
 		}
 
 		return utils::Maybe(result);
+	}
+
+	bool Solver::handle_clause_needs_attention(CNF::Literal &literal,
+											   std::vector<VariableValueDecision> &current_variables_stack) {
+		if (literal.get_value() == CNF::Value::False) {
+			if (!change_last_decision(current_variables_stack)) {
+				return true;
+			}
+		} else {
+			int id = literal.var->id;
+			current_variables_stack.emplace_back(id, true);
+			variables[id]->value = literal.has_negate ? CNF::Value::False : CNF::Value::True;
+		}
+		return false;
 	}
 
 	bool Solver::change_last_decision(std::vector<VariableValueDecision> &current_variables_stack) {
