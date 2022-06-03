@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+import argparse
 import queue
 import tarfile
 import time
@@ -13,6 +14,7 @@ import threading
 import subprocess
 import re
 import config
+import config_ci
 import textwrap
 import tqdm
 from typing import List
@@ -127,8 +129,10 @@ def consume_task_queue():
         task_queue.task_done()
 
 
-def download_tests_and_queue(archive_uri: str, tempdir: str, sat_solver_path: str, expected_result: bool):
-    path = download_archive(urllib.parse.urljoin(config.base_url, archive_uri), tempdir)
+def download_tests_and_queue(archive_uri: str, tempdir: str, sat_solver_path: str, expected_result: bool,
+                             is_config_for_ci: bool):
+    path = download_archive(
+        urllib.parse.urljoin(config_ci.base_url if is_config_for_ci else config.base_url, archive_uri), tempdir)
     paths = get_files_in_dir_recursively(path)
     test_progressbar.total += len(paths)
     test_progressbar.refresh()
@@ -137,17 +141,17 @@ def download_tests_and_queue(archive_uri: str, tempdir: str, sat_solver_path: st
         task_queue.put(lambda path_copy=test_path: run_sat_solver(path_copy, sat_solver_path, expected_result))
 
 
-def run_tests(sat_solver_path: str):
+def run_tests(sat_solver_path: str, is_config_for_ci: bool):
     for i in range(THREAD_POOL_SIZE):
         threading.Thread(target=consume_task_queue).start()
     with tempfile.TemporaryDirectory() as tempdir:
-        for archive in config.satisfiable_cnf_archives:
-            download_tests_and_queue(archive, tempdir, sat_solver_path, True)
+        for archive in (config_ci.satisfiable_cnf_archives if is_config_for_ci else config.satisfiable_cnf_archives):
+            download_tests_and_queue(archive, tempdir, sat_solver_path, True, is_config_for_ci)
             download_progressbar.update(1)
             download_progressbar.write(f"Downloaded {archive}")
 
-        for archive in config.unsatisfiable_cnf_archives:
-            download_tests_and_queue(archive, tempdir, sat_solver_path, False)
+        for archive in (config_ci.unsatisfiable_cnf_archives if is_config_for_ci else config.unsatisfiable_cnf_archives):
+            download_tests_and_queue(archive, tempdir, sat_solver_path, False, is_config_for_ci)
             download_progressbar.update(1)
             download_progressbar.write(f"Downloaded {archive}")
 
@@ -164,10 +168,17 @@ def get_default_bar_format() -> str:
     return f"{l_bar}{{bar}}{r_bar}"
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path_to_exe", help="executable file path")
+    parser.add_argument("-c", action='store_true',
+                        help="config type: default or ci version(not to spend much time in ci version)")
+
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: ./test_runner.py path_to_sat_solver")
-        exit(1)
+    args = parse_args()
 
     archives_count = len(config.satisfiable_cnf_archives + config.unsatisfiable_cnf_archives)
     download_progressbar_desc = "Test archives downloaded"
@@ -178,4 +189,4 @@ if __name__ == "__main__":
     test_progressbar = tqdm.tqdm(total=0, position=1, bar_format=get_default_bar_format(),
                                  desc=test_progressbar_desc + " " * max(0, diff))
 
-    run_tests(sys.argv[1])
+    run_tests(args.path_to_exe, args.c)

@@ -24,3 +24,28 @@ jobs:
           cmake ..
           make
           ctest
+
+  ci_integrational:
+    name: Integrational tests
+    runs-on: ubuntu-20.04
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+
+      - name: Install dependencies
+        run: |
+          pip3 install -r requirements.txt
+
+      - name: Build Release (Ubuntu)
+        run: |
+          mkdir cmake-build-release
+          cd cmake-build-release
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make
+          python3 ../tests/SATLIB/test_runner.py ./CDCL_solver.exe -c
