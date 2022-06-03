@@ -5,6 +5,7 @@
 #include <utility>
 #include <memory>
 #include <vector>
+#include <array>
 
 #include "utils.h"
 
