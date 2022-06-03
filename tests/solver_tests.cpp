@@ -3,7 +3,8 @@
 #include "doctest/doctest.h"
 
 namespace {
-	std::pair<CNF::Clause, std::unordered_map<int, std::shared_ptr<CNF::Variable>>> get_clause(const std::vector<CDCL::WeakLiteral> &vec) {
+	std::pair<CNF::Clause, std::unordered_map<int, std::shared_ptr<CNF::Variable>>>
+	get_clause(const std::vector<CDCL::WeakLiteral> &vec) {
 		std::vector<CNF::Literal> result_clause;
 		std::unordered_map<int, std::shared_ptr<CNF::Variable>> variables;
 		for (const auto &literal: vec) {
@@ -13,6 +14,14 @@ namespace {
 			result_clause.emplace_back(variables[literal.id], literal.has_negate);
 		}
 		return std::make_pair(CNF::Clause(result_clause), variables);
+	}
+
+	CNF::Clause create_clause_of_non_negated(std::vector<CNF::Value> values) {
+		std::vector<CNF::Literal> literals;
+		for (int i = 0; i < values.size(); i++) {
+			literals.emplace_back(std::make_shared<CNF::Variable>(CNF::Variable(i, values[i])), false);
+		}
+		return CNF::Clause(literals);
 	}
 }
 
@@ -80,49 +89,65 @@ TEST_SUITE("CNF") {
 		}
 	}
 
-	TEST_CASE("clause get_maybe") {
-		CNF::Clause clause;
-		std::unordered_map<int, std::shared_ptr<CNF::Variable>> variables;
-
-		std::vector<CDCL::WeakLiteral> vec = {
-				{0, false},
-				{1, false},
-				{2, false}
-		};
-
-		std::tie(clause, variables) = get_clause(vec);
-
-		variables[1]->value = CNF::Value::False;
-		clause.update_clause_value();
-		SUBCASE("only 1 false assigned of 3 variables") {
-			auto val = clause.get_maybe_updatable_variable_id();
-			CHECK_EQ(false, val.has_value);
+	TEST_CASE("clause needs_attention") {
+		SUBCASE("literal size 1 true") {
+			auto clause = create_clause_of_non_negated({CNF::Value::True});
+			CHECK_FALSE(clause.needs_attention());
 		}
 
-		variables[0]->value = CNF::Value::False;
-		clause.update_clause_value();
-		SUBCASE("only 1 non assigned var left") {
-			auto val = clause.get_maybe_updatable_variable_id();
-			CHECK_EQ(true, val.has_value);
-			CHECK_EQ(CNF::Value::True, val.value.value);
-			CHECK_EQ(2, val.value.id);
-
+		SUBCASE("literal size 1 false") {
+			auto clause = create_clause_of_non_negated({CNF::Value::False});
+			CHECK(clause.needs_attention());
 		}
 
-		variables[0]->value = CNF::Value::True;
-		clause.update_clause_value();
-		SUBCASE("true assigned") {
-			auto val = clause.get_maybe_updatable_variable_id();
-			CHECK_EQ(false, val.has_value);
+		SUBCASE("literal size 1 undefined") {
+			auto clause = create_clause_of_non_negated({CNF::Value::Undefined});
+			CHECK(clause.needs_attention());
 		}
 
-		variables[0]->value = CNF::Value::False;
-		variables[2]->value = CNF::Value::False;
-		clause.update_clause_value();
-		SUBCASE("all assigned to false") {
-			auto val = clause.get_maybe_updatable_variable_id();
-			CHECK_EQ(false, val.has_value);
+		SUBCASE("literal size 2 false false") {
+			auto clause = create_clause_of_non_negated({CNF::Value::False, CNF::Value::False});
+			CHECK(clause.needs_attention());
 		}
 
+		SUBCASE("literal size 2 false true") {
+			auto clause = create_clause_of_non_negated({CNF::Value::False, CNF::Value::True});
+			CHECK_FALSE(clause.needs_attention());
+		}
+
+		SUBCASE("literal size 2 false undefined") {
+			auto clause = create_clause_of_non_negated({CNF::Value::False, CNF::Value::Undefined});
+			CHECK(clause.needs_attention());
+		}
+
+		SUBCASE("literal size 2 true false") {
+			auto clause = create_clause_of_non_negated({CNF::Value::True, CNF::Value::False});
+			CHECK_FALSE(clause.needs_attention());
+		}
+
+		SUBCASE("literal size 2 true true") {
+			auto clause = create_clause_of_non_negated({CNF::Value::True, CNF::Value::True});
+			CHECK_FALSE(clause.needs_attention());
+		}
+
+		SUBCASE("literal size 2 true undefined") {
+			auto clause = create_clause_of_non_negated({CNF::Value::True, CNF::Value::Undefined});
+			CHECK_FALSE(clause.needs_attention());
+		}
+
+		SUBCASE("literal size 2 undefined false") {
+			auto clause = create_clause_of_non_negated({CNF::Value::Undefined, CNF::Value::False});
+			CHECK(clause.needs_attention());
+		}
+
+		SUBCASE("literal size 2 undefined true") {
+			auto clause = create_clause_of_non_negated({CNF::Value::Undefined, CNF::Value::True});
+			CHECK_FALSE(clause.needs_attention());
+		}
+
+		SUBCASE("literal size 2 undefined undefined") {
+			auto clause = create_clause_of_non_negated({CNF::Value::Undefined, CNF::Value::Undefined});
+			CHECK_FALSE(clause.needs_attention());
+		}
 	}
 }
