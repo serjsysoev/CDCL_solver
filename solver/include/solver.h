@@ -80,8 +80,10 @@ namespace CDCL {
 
 		UnitPropagationStatus unit_propagate(std::vector<VariableValueDecision> &current_variables_stack);
 
+		template<typename T>
 		void apply_new_variables(std::vector<VariableValueDecision> &current_variables_stack,
-		                         const std::unordered_map<int, CNF::Value> &value_by_id);
+								 T id_and_value_begin,
+								 T id_and_value_end);
 
 		void update_clauses_value();
 
@@ -89,7 +91,9 @@ namespace CDCL {
 		std::unordered_map<int, std::shared_ptr<CNF::Variable>> variables;
 
 		bool checkAllClauses(const std::vector<VariableValueDecision> &current_variables_stack) const;
-	};
+
+        void set_same_sign_variables(std::vector<VariableValueDecision> &current_variables_stack);
+    };
 }
 
 #endif //CDCL_SOLVER_SOLVER_H
