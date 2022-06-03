@@ -40,9 +40,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo python3 -m pip install --upgrade pip
-          sudo curl https://bootstrap.pypa.io/get-pip.py | sudo python
-          sudo python3 -m pip install -r requirements.txt
+          curl https://bootstrap.pypa.io/get-pip.py | python
+          python3 -m pip install -r requirements.txt
 
       - name: Build Release (Ubuntu)
         run: |
