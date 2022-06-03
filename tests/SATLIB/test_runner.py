@@ -69,8 +69,9 @@ def test_assignment(cnf_path: Path, assignment: str) -> bool:
     p, cnf, vars, clauses = lines[0].split()
     if p != 'p' or cnf != 'cnf':
         return False
-    vars, clauses = int(vars), int(clauses)
-    clauses = ' '.join(lines[1:clauses + 1]).split(' 0')
+    vars, clauses_count = int(vars), int(clauses)
+    clauses = ' '.join(lines[1:]).split()
+    clauses = ' '.join(clauses).split(' 0')[:clauses_count]
     assignment = [not x.startswith("-") for x in assignment.split()]
     for clause in clauses:
         clause = [int(x) for x in clause.split()]
