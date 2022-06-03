@@ -9,8 +9,6 @@
 
 
 namespace CDCL {
-	int test();
-
 	struct WeakLiteral {
 		int id;
 		bool has_negate;

@@ -45,19 +45,51 @@ namespace CNF
 	class Clause
 	{
 	public:
-		explicit Clause(std::vector<Literal> literals) : literals(std::move(literals)), isTrue(false)
+		explicit Clause(std::vector<Literal> literals = {}) : literals(std::move(literals)), isTrue(false)
 		{}
 
+		Clause(const Clause& other) {
+			literals.clear();
+			isTrue = false;
+
+			literals = other.literals;
+		}
+
+		Clause(Clause && other) noexcept {
+			literals.clear();
+			isTrue = false;
+
+			literals = other.literals;
+		}
+
+		Clause &operator =(const Clause& other) {
+			literals.clear();
+			isTrue = false;
+
+			literals = other.literals;
+			return *this;
+		}
+
+		Clause &operator =(Clause && other) noexcept {
+			literals.clear();
+			isTrue = false;
+
+			literals = other.literals;
+
+			return *this;
+		}
+
 		[[nodiscard]] CNF::Value get_value() const {
+			bool has_undefined = false;
 			for (const auto &lit : literals) {
 				if (lit.get_value() == Value::Undefined) {
-					return Value::Undefined;
+					has_undefined = true;
 				}
 				if (lit.get_value() == Value::True) {
 					return Value::True;
 				}
 			}
-			return Value::False;
+			return has_undefined ? Value::Undefined : Value::False;
 		}
 
 		std::vector<Literal> literals;
