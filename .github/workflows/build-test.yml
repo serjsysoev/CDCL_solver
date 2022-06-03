@@ -49,4 +49,7 @@ jobs:
           cd cmake-build-release
           cmake -DCMAKE_BUILD_TYPE=Release ..
           make
+
+      - name: Run integrational tests
+        run: |
           python3 ../tests/SATLIB/test_runner.py ./CDCL_solver -c
