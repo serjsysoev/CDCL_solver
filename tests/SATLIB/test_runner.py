@@ -62,11 +62,35 @@ def get_files_in_dir_recursively(dir_path: str) -> List[Path]:
     return list(Path(dir_path).rglob("*.[cC][nN][fF]"))
 
 
+def test_assignment(cnf_path: Path, assignment: str) -> bool:
+    with open(cnf_path, "r") as f:
+        lines = f.readlines()
+    lines = list(filter(lambda line: not line.startswith('c'), lines))
+    p, cnf, vars, clauses = lines[0].split()
+    if p != 'p' or cnf != 'cnf':
+        return False
+    vars, clauses = int(vars), int(clauses)
+    clauses = ' '.join(lines[1:clauses + 1]).split(' 0')
+    assignment = [not x.startswith("-") for x in assignment.split()]
+    for clause in clauses:
+        clause = [int(x) for x in clause.split()]
+        result = False
+        for literal in clause:
+            value = assignment[abs(literal) - 1]
+            if literal < 0:
+                value = not value
+            result |= value
+        if not result:
+            return False
+    return True
+
+
 def run_sat_solver(test_path: Path, sat_solver_path: str, expected_result: bool):
     process = subprocess.run([sat_solver_path, str(test_path)], capture_output=True)
     stdout = process.stdout
     stdout = stdout.decode("utf-8")
     lines = stdout.splitlines()
+
     if len(lines) == 0 or lines[0] not in ["SATISFIABLE", "UNSATISFIABLE"]:
         stderr = process.stderr.decode("utf-8")
         output = textwrap.dedent(f"""
@@ -79,12 +103,16 @@ def run_sat_solver(test_path: Path, sat_solver_path: str, expected_result: bool)
         test_progressbar.write(output, file=sys.stderr)
     else:
         result = lines[0] == "SATISFIABLE"
+        archive_name = os.path.basename(test_path.parent)
         if result != expected_result:
             expected_text = "SATISFIABLE" if expected_result else "UNSATISFIABLE"
             result_text = "SATISFIABLE" if result else "UNSATISFIABLE"
-            archive_name = os.path.basename(test_path.parent)
             test_progressbar.write(f"Wrong result for file {test_path.name} from {archive_name}:\n"
                                    f"Expected {expected_text}, got {result_text}", file=sys.stderr)
+        elif lines[0] == "SATISFIABLE" and not test_assignment(test_path, lines[1]):
+            test_progressbar.write(f"Wrong assignment for file {test_path.name} from {archive_name}\n"
+                                   f"Got {lines[1]}")
+
     test_progressbar.update(1)
 
 
