@@ -1,36 +1,52 @@
 #include "CNF.h"
 
-utils::Maybe<CNF::Variable> CNF::Clause::get_maybe_updatable_variable_id() const {
-	if (isTrue) {
-		return {};
-	}
-	CNF::Variable var_with_val(-1, Value::Undefined);
-	for (const auto &literal : literals) {
-		if (literal.get_value() == Value::Undefined) {
-			if (var_with_val.value == Value::Undefined) {
-				var_with_val.id = literal.var->id;
-                var_with_val.value = literal.has_negate ? Value::False : Value::True;
-				continue;
-			}
-			return {};
+utils::Maybe<int> CNF::Clause::find_first_non_false_literal(int excluded_index = -1) {
+	for (int literal_index = 0; literal_index < literals.size(); ++literal_index) {
+		if (literal_index == excluded_index) continue;
+		auto &literal = literals[literal_index];
+		if (literal.get_value() != CNF::Value::False) {
+			return utils::Maybe(literal_index);
 		}
 	}
-
-    return var_with_val.value != Value::Undefined ? utils::Maybe(var_with_val) : utils::Maybe<CNF::Variable>();
+	return {};
 }
 
-void CNF::Clause::update_clause_value() {
-	isTrue = false;
-	for (const auto &literal : literals) {
-		if (literal.get_value() == Value::True) {
-			isTrue = true;
-            break;
+bool CNF::Clause::needs_attention() {
+	if (literals.size() == 1) {
+		return literals.front().get_value() != CNF::Value::True;
+	}
+	if (literals[watched_literals[0]].get_value() == Value::False) {
+		std::swap(watched_literals[0], watched_literals[1]);
+	}
+
+	if (literals[watched_literals[0]].get_value() == Value::False) {
+		auto result = find_first_non_false_literal();
+		if (result.has_value) {
+			watched_literals[0] = result.value;
+		} else {
+			return true;
 		}
 	}
+	if (literals[watched_literals[0]].get_value() == Value::True) {
+		return false;
+	}
+
+	if (literals[watched_literals[1]].get_value() == Value::False) {
+		auto result = find_first_non_false_literal(watched_literals[0]);
+		if (result.has_value) {
+			watched_literals[0] = result.value;
+		}
+		return !result.has_value;
+	}
+	return false;
+}
+
+std::array<CNF::Literal, 2> CNF::Clause::get_watched_literals() {
+	return {literals[watched_literals[0]], literals[watched_literals[1]]};
 }
 
 CNF::Value CNF::Literal::get_value() const {
-    auto value = var->value;
+	auto value = var->value;
 	if (value == Value::Undefined) {
 		return Value::Undefined;
 	}
@@ -65,7 +81,7 @@ std::ostream &operator<<(std::ostream &out, const CNF::Literal &literal) {
 }
 
 std::ostream &operator<<(std::ostream &out, const CNF::Clause &clause) {
-	for (const auto &literal : clause.literals) {
+	for (const auto &literal: clause.literals) {
 		out << literal << ' ';
 	}
 	return out;

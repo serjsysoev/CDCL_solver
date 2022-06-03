@@ -55,43 +55,21 @@ namespace CDCL {
 
 		struct VariableValueDecision {
 			int var_id;
-			bool cur_value;
 			bool is_automatically_determined;
 
-			VariableValueDecision(
-					int var_id,
-					bool cur_value,
-					bool is_automatically_determined
-			) : var_id(var_id), cur_value(cur_value),
-			    is_automatically_determined(is_automatically_determined) {}
+			VariableValueDecision(int var_id, bool is_automatically_determined)
+					: var_id(var_id), is_automatically_determined(is_automatically_determined) {}
 		};
-
-		enum UnitPropagationStatus {
-			Bad,
-			Good,
-			NothingChanged
-		};
-
-		int get_next_unassigned_variable() const;
 
 		bool change_last_decision(std::vector<VariableValueDecision> &current_variables_stack);
-
-		UnitPropagationStatus unit_propagate(std::vector<VariableValueDecision> &current_variables_stack);
-
-		template<typename T>
-		void apply_new_variables(std::vector<VariableValueDecision> &current_variables_stack,
-								 T id_and_value_begin,
-								 T id_and_value_end);
-
-		void update_clauses_value();
 
 		std::vector<CNF::Clause> cnf;
 		std::unordered_map<int, std::shared_ptr<CNF::Variable>> variables;
 
-		bool checkAllClauses(const std::vector<VariableValueDecision> &current_variables_stack) const;
-
         void set_same_sign_variables(std::vector<VariableValueDecision> &current_variables_stack);
-    };
+
+		int get_next_unassigned_variable() const;
+	};
 }
 
 #endif //CDCL_SOLVER_SOLVER_H

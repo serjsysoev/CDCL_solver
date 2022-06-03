@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include "solver.h"
 
 namespace CDCL {
@@ -26,79 +27,63 @@ namespace CDCL {
 	utils::Maybe<std::vector<VariableConfig>> Solver::solve() {
 		std::vector<VariableValueDecision> current_variables_stack;
 		set_same_sign_variables(current_variables_stack);
-		while (current_variables_stack.size() != variables.size()) {
-			UnitPropagationStatus propagating_status;
-			do {
-				propagating_status = unit_propagate(current_variables_stack);
-			} while (propagating_status == Good);
-			if (propagating_status == Bad || !checkAllClauses(current_variables_stack)) {
-				if (!change_last_decision(current_variables_stack)) {
-					return {};
+
+		while (true) {
+			int i = 0;
+			bool restart = false;
+			for (auto &clause : cnf) {
+				i++;
+				if (clause.needs_attention()) {
+					auto &literals = clause.literals;
+					if (literals.size() == 1) {
+						auto &literal = literals.front();
+						if (literal.get_value() == CNF::Value::False) {
+							if (!change_last_decision(current_variables_stack)) {
+								return {};
+							}
+						} else {
+							assert(literal.get_value() == CNF::Value::Undefined);
+							int id = literal.var->id;
+							current_variables_stack.emplace_back(id, true);
+							variables[id]->value = literal.has_negate ? CNF::Value::False : CNF::Value::True;
+						}
+					} else {
+						auto first_literal = clause.get_watched_literals().front();
+						if (first_literal.get_value() == CNF::Value::False) {
+							if (!change_last_decision(current_variables_stack)) {
+								return {};
+							}
+						} else {
+							assert(first_literal.get_value() == CNF::Value::Undefined);
+							int id = first_literal.var->id;
+							current_variables_stack.emplace_back(id, true);
+							variables[id]->value = first_literal.has_negate ? CNF::Value::False : CNF::Value::True;
+						}
+					}
+					restart = true;
+					break;
 				}
+			}
+			if (restart) {
 				continue;
 			}
-			if (current_variables_stack.size() == variables.size())
+			if (current_variables_stack.size() == variables.size()) {
 				break;
+			}
 			int next_variable_id = get_next_unassigned_variable();
-			current_variables_stack.emplace_back(next_variable_id, false, false);
+			current_variables_stack.emplace_back(next_variable_id, false);
 			variables[next_variable_id]->value = CNF::Value::False;
-			update_clauses_value();
 		}
 
 
 		// constructing result
 		std::vector<VariableConfig> result;
 		for (const auto &var_with_decision: current_variables_stack) {
-			result.emplace_back(var_with_decision.var_id, var_with_decision.cur_value);
+			int id = var_with_decision.var_id;
+			result.emplace_back(id, variables[id]->value == CNF::Value::True);
 		}
 
 		return utils::Maybe(result);
-	}
-
-	Solver::UnitPropagationStatus Solver::unit_propagate(std::vector<VariableValueDecision> &current_variables_stack) {
-		// find all propagatable units
-		std::vector<CNF::Variable> all_propagatable_variables;
-		for (auto &clause: cnf) {
-			auto maybe_var = clause.get_maybe_updatable_variable_id();
-			if (!maybe_var.has_value) {
-				continue;
-			}
-			all_propagatable_variables.push_back(maybe_var.value);
-		}
-
-		// checking
-		std::unordered_map<int, CNF::Value> value_by_id;
-		for (const auto &[id, val]: all_propagatable_variables) {
-			if (value_by_id.find(id) == value_by_id.end())
-				value_by_id[id] = val;
-			if (value_by_id[id] != val)
-				return Bad; // found contradiction
-		}
-
-		// apply changes
-		apply_new_variables(current_variables_stack, value_by_id.begin(), value_by_id.end());
-		return value_by_id.empty() ? NothingChanged : Good;
-	}
-
-	template<typename T>
-	void Solver::apply_new_variables(std::vector<VariableValueDecision> &current_variables_stack,
-									 T id_and_value_begin,
-									 T id_and_value_end) {
-		// applying
-		for (auto it = id_and_value_begin; it != id_and_value_end; ++it) {
-			auto[id, val] = *it;
-			current_variables_stack.emplace_back(id, val == CNF::Value::True, true);
-			variables[id]->value = val;
-		}
-
-		// updating clause's result
-		update_clauses_value();
-	}
-
-	void Solver::update_clauses_value() {
-		for (auto &clause: cnf) {
-			clause.update_clause_value();
-		}
 	}
 
 	bool Solver::change_last_decision(std::vector<VariableValueDecision> &current_variables_stack) {
@@ -110,14 +95,12 @@ namespace CDCL {
 				current_variables_stack.pop_back();
 				continue;
 			}
-			if (stack_back.cur_value) {
+			if (variables[stack_back.var_id]->value == CNF::Value::True) {
 				variables[stack_back.var_id]->value = CNF::Value::Undefined;
 				current_variables_stack.pop_back();
 				continue;
 			}
 			variables[stack_back.var_id]->value = CNF::Value::True;
-			stack_back.cur_value = true;
-			update_clauses_value();
 			return true;
 		}
 
@@ -132,17 +115,6 @@ namespace CDCL {
 			}
 		}
 		return -1;
-	}
-
-	bool Solver::checkAllClauses(const std::vector<VariableValueDecision> &current_variables_stack) const {
-		for (auto &clause: cnf) {
-			if (clause.get_value() == CNF::Value::False) {
-				return false;
-			}
-		}
-
-		return true;
-
 	}
 
 	enum class VariableOccurrences {
@@ -177,16 +149,20 @@ namespace CDCL {
 				}
 			}
 		}
-		std::vector<std::pair<int, CNF::Value>> id_and_value;
 		for (const auto [id, variable_occurrences]: variable_sign) {
-			if (variable_occurrences == VariableOccurrences::OnlyNegated ||
-				variable_occurrences == VariableOccurrences::OnlyNonNegated) {
-				id_and_value.emplace_back(
-						id,
-						variable_occurrences == VariableOccurrences::OnlyNegated ? CNF::Value::False : CNF::Value::True
-				);
+			switch (variable_occurrences) {
+				case VariableOccurrences::OnlyNegated:
+					current_variables_stack.emplace_back(id, true);
+					variables[id]->value = CNF::Value::False;
+					break;
+				case VariableOccurrences::OnlyNonNegated:
+					current_variables_stack.emplace_back(id, true);
+					variables[id]->value = CNF::Value::True;
+					break;
+				case VariableOccurrences::Never:
+				case VariableOccurrences::Both:
+					break;
 			}
 		}
-		apply_new_variables(current_variables_stack, id_and_value.begin(), id_and_value.end());
 	}
 }
