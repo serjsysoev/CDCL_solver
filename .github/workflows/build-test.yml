@@ -52,4 +52,4 @@ jobs:
 
       - name: Run integrational tests
         run: |
-          python3 ../tests/SATLIB/test_runner.py ./CDCL_solver -c
+          python3 tests/SATLIB/test_runner.py ./cmake-build-release/CDCL_solver -c
