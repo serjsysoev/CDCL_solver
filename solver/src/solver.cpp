@@ -3,10 +3,6 @@
 #include "solver.h"
 
 namespace CDCL {
-	int test() {
-		return 5;
-	}
-
 	void Solver::add_clause(const std::vector<WeakLiteral> &clause) {
 		std::vector<CNF::Literal> result_clause;
 		for (const auto &literal: clause) {
