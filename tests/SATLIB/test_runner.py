@@ -47,7 +47,26 @@ def download_archive(url: str, destination: str) -> str:
                 with tarfile.open(fileobj=response.raw, mode="r:gz") as tar:
                     tar_dir = os.path.join(destination, filename)
                     os.mkdir(tar_dir)
-                    tar.extractall(path=tar_dir)
+                    def is_within_directory(directory, target):
+                        
+                        abs_directory = os.path.abspath(directory)
+                        abs_target = os.path.abspath(target)
+                    
+                        prefix = os.path.commonprefix([abs_directory, abs_target])
+                        
+                        return prefix == abs_directory
+                    
+                    def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+                    
+                        for member in tar.getmembers():
+                            member_path = os.path.join(path, member.name)
+                            if not is_within_directory(path, member_path):
+                                raise Exception("Attempted Path Traversal in Tar File")
+                    
+                        tar.extractall(path, members, numeric_owner=numeric_owner) 
+                        
+                    
+                    safe_extract(tar, path=tar_dir)
                     return tar_dir
         except Exception as e:
             if attempts == DOWNLOAD_ATTEMPTS_MAX:
